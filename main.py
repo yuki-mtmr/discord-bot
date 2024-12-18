@@ -2,14 +2,18 @@ import discord
 import re
 import os
 from dotenv import load_dotenv
+from langchain_google_genai import ChatGoogleGenerativeAI
 
 load_dotenv()
 
-# 環境変数を取得する
 DISCORD_BOT_TOKEN = os.getenv('DISCORD_BOT_TOKEN')
-GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
+
+llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash")
+result = llm.invoke("Write a ballad about LangChain")
+print(result.content)
 
 intents = discord.Intents.all()
+intents.message_content = True
 client = discord.Client(intents=intents)
 
 
