@@ -1,38 +1,44 @@
 import discord
-import re
+from discord import Game
 import os
 from dotenv import load_dotenv
-from langchain_google_genai import ChatGoogleGenerativeAI
+import google.generativeai as genai
 
 load_dotenv()
 
 DISCORD_BOT_TOKEN = os.getenv('DISCORD_BOT_TOKEN')
-
-llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash")
-result = llm.invoke("Write a ballad about LangChain")
-print(result.content)
+genai.configure(api_key=os.environ["GOOGLE_API_KEY"])
+model = genai.GenerativeModel('gemini-1.5-flash-latest')
+chat = model.start_chat(history=[])
 
 intents = discord.Intents.all()
 intents.message_content = True
-client = discord.Client(intents=intents)
+discord = discord.Client(intents=intents)
 
 
-@client.event
+def split_text(text, chunk_size=1500):
+    return [text[i:i+chunk_size] for i in range(0, len(text), chunk_size)]
+
+
+@discord.event
 async def on_ready():
-    print(f'We have logged in as {client.user}')
-    await client.change_presence(activity=discord.Game(name="任意の文字列"))
+    print(f'We have logged in as {discord.user}')
+    await discord.change_presence(activity=Game(name="任意の文字列"))
 
 
-@client.event
+@discord.event
 async def on_message(message):
     if message.author.bot:
         return
-
-    if message.author == client.user:
+    if message.author == discord.user:
         return
-    if message.content.startswith('hello'):
-        await message.channel.send('Hello!')
-    if message.content.startswith('おもち'):
-        await message.channel.send('もちもち')
+    await message.channel.send("---")
+    input_text = message.content
 
-client.run(DISCORD_BOT_TOKEN)
+    answer = chat.send_message(input_text)
+
+    splitted_text = split_text(answer.text)
+    for chunk in splitted_text:
+        await message.channel.send(chunk)
+
+discord.run(DISCORD_BOT_TOKEN)
